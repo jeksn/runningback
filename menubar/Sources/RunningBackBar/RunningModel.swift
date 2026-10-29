@@ -49,6 +49,11 @@ final class RunningModel: ObservableObject {
     @Published var loginEnabled = false
 
     private var started = false
+    private var menuOpen = false
+
+    func setMenuOpen(_ open: Bool) {
+        menuOpen = open
+    }
 
     private static func binaryPath() -> String? {
         if let custom = ProcessInfo.processInfo.environment["RB_BIN"], !custom.isEmpty {
@@ -76,7 +81,12 @@ final class RunningModel: ObservableObject {
         Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 5_000_000_000)
-                self?.refresh()
+                // Republishing while the menu is open makes SwiftUI
+                // rebuild it and the open menu dismisses under the
+                // cursor - so hold off until the menu is closed.
+                if self?.menuOpen != true {
+                    self?.refresh()
+                }
             }
         }
     }
@@ -89,7 +99,12 @@ final class RunningModel: ObservableObject {
         }
         do {
             let data = try runProcess(bin, ["list", "--json"])
-            items = try JSONDecoder().decode([Proc].self, from: data)
+            let newItems = try JSONDecoder().decode([Proc].self, from: data)
+            // Only republish on a real change; identical updates would
+            // needlessly rebuild the menu.
+            if newItems != items {
+                items = newItems
+            }
             lastError = nil
         } catch {
             lastError = "error: \(error.localizedDescription)"
