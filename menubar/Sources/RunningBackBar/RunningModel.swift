@@ -46,6 +46,12 @@ final class RunningModel: ObservableObject {
         if let custom = ProcessInfo.processInfo.environment["RB_BIN"], !custom.isEmpty {
             return custom
         }
+        // Bundled build: the Go binary ships inside the app as a resource,
+        // making RunningBackBar.app standalone.
+        if let bundled = Bundle.main.resourceURL?.appendingPathComponent("runningback"),
+           FileManager.default.isExecutableFile(atPath: bundled.path) {
+            return bundled.path
+        }
         let candidates = [
             "/opt/homebrew/bin/runningback",
             "/usr/local/bin/runningback",

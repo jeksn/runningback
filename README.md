@@ -43,6 +43,35 @@ The menu bar app shells out to the installed `runningback` binary for
 `list --json`. Point it at a specific binary with the `RB_BIN` environment
 variable.
 
+## Distribution
+
+`make release` builds distributable artifacts for Apple Silicon macOS:
+
+- `build/runningback-darwin-arm64.tar.gz` — the standalone CLI
+- `build/RunningBackBar.zip` — the standalone menu bar app; the Go binary is
+  bundled in `Contents/Resources/runningback`, so the app has no external
+  dependencies
+
+Ways to hand this to other people, easiest first:
+
+1. **Zip on GitHub Releases.** Push the repo, tag a version (`git tag v0.1.0`),
+   and the included workflow (`.github/workflows/release.yml`) builds both
+   artifacts and attaches them to the release. Recipients unzip
+   `RunningBackBar.zip`, drag it to /Applications, done. For the terminal CLI
+   they untar the tarball into `~/.local/bin`.
+2. **Homebrew tap.** Add a `runningback` formula (install the tarball binary)
+   and a `runningback-bar` cask (install the app zip) in a tap repo, so others
+   can `brew install`. Both formulas are small because the artifacts are
+   self-contained.
+3. **Signed and notarized.** The app is currently unsigned. Anyone who
+   downloads it needs to right-click → Open the first time, or run
+   `xattr -dr com.apple.quarantine RunningBackBar.app`. With an Apple
+   Developer account ($99/yr) you can sign with a Developer ID certificate and
+   notarize with `notarytool`, after which it opens normally for everyone.
+
+Building from source needs Go 1.25+ and the Xcode Command Line Tools
+(`xcode-select --install`), then `make install install-bar`.
+
 ## Configuration
 
 - `RB_ROOTS` — colon-separated list of project roots. Default: `~/Dev` and `~/Herd` (Herd-served Laravel sites).
