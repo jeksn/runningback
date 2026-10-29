@@ -8,7 +8,7 @@ a live count in the macOS menu bar.
     runningback              interactive TUI
     runningback list         one-shot list
     runningback list --json  machine-readable output (used by the menu bar app)
-    runningback kill PID     send SIGTERM to a process
+    runningback kill PID|PORT  send SIGTERM to a process or to a port
 
 ## How it works
 
@@ -41,9 +41,12 @@ a port (kills everything listening on it) or a raw PID.
     make install        # builds and installs the Go binary (opt/homebrew/bin or ~/.local/bin)
     make install-bar    # also builds and installs RunningBackBar.app into /Applications
 
-The menu bar app shells out to the installed `runningback` binary for
-`list --json`. Point it at a specific binary with the `RB_BIN` environment
-variable.
+The menu bar app shells out to `runningback list --json`. It prefers the
+copy bundled inside the app (so the .app is standalone), then falls back
+to one on PATH. Point it at a specific binary with the `RB_BIN` environment
+variable. Its menu offers open/copy URL, Reveal in Finder, stop (single
+process or all in a project), and a Launch at Login toggle. The menu bar
+count only includes projects and services, not system noise.
 
 ## Distribution
 
@@ -83,5 +86,7 @@ Building from source needs Go 1.25+ and the Xcode Command Line Tools
 ## Layout
 
     main.go, detect.go, list.go, tui.go   Go CLI + TUI (stdlib only)
-    main_test.go                          unit tests
+    main_test.go, detect_test.go          unit tests
     menubar/                              SwiftUI menu bar app (SwiftPM)
+    tools/make_icon.swift                 app icon generator (lucide-lab helmet)
+    .github/workflows/release.yml         release build on tag
