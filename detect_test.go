@@ -76,6 +76,42 @@ func TestRole(t *testing.T) {
 	}
 }
 
+func TestDefaultRootsDiscovery(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("RB_ROOTS", "")
+
+	// A project folder and a Herd-style folder both hold git checkouts.
+	mkdirAll(t, home+"/Dev/runningback/.git")
+	mkdirAll(t, home+"/Herd/satsuma/.git")
+	// Media dirs and dotdirs are ignored even if they contain one.
+	mkdirAll(t, home+"/Movies/cloned-repo/.git")
+	mkdirAll(t, home+"/.cache/cloned-repo/.git")
+	// A plain folder without checkouts is not a root.
+	mkdirAll(t, home+"/Documents/invoices")
+
+	roots := defaultRoots()
+	want := []string{home + "/Dev", home + "/Herd"}
+	if !reflect.DeepEqual(roots, want) {
+		t.Fatalf("defaultRoots = %v, want %v", roots, want)
+	}
+
+	// The config file beats discovery and expands ~.
+	cfg := home + "/.config/runningback"
+	mkdirAll(t, cfg)
+	os.WriteFile(cfg+"/roots", []byte("# my roots\n~/Work\n"+home+"/Sites\n"), 0o644)
+	roots = defaultRoots()
+	if !reflect.DeepEqual(roots, []string{home + "/Work", home + "/Sites"}) {
+		t.Fatalf("config roots = %v", roots)
+	}
+
+	// The environment beats both.
+	t.Setenv("RB_ROOTS", home+"/Custom")
+	if roots = defaultRoots(); !reflect.DeepEqual(roots, []string{home + "/Custom"}) {
+		t.Fatalf("env roots = %v", roots)
+	}
+}
+
 func TestKillTargets(t *testing.T) {
 	procs := []Proc{
 		{PID: 2588, Kind: "dev", Ports: []int{4322}},

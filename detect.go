@@ -42,6 +42,17 @@ var nonWebPorts = map[int]bool{
 	3306: true, 33060: true, 5432: true, 6379: true, 11211: true, 27017: true,
 }
 
+// rootsConfigPath is the config file holding one project root per line.
+func rootsConfigPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".config", "runningback", "roots")
+}
+
+// defaultRoots picks project roots, in order of specificity:
+// RB_ROOTS environment, then the config file, then auto-discovery.
 func defaultRoots() []string {
 	if v := os.Getenv("RB_ROOTS"); v != "" {
 		var roots []string
@@ -52,12 +63,84 @@ func defaultRoots() []string {
 		}
 		return roots
 	}
+	if roots := configFileRoots(); len(roots) > 0 {
+		return roots
+	}
+	return discoverRoots()
+}
+
+func configFileRoots() []string {
+	path := rootsConfigPath()
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	home, _ := os.UserHomeDir()
+	var roots []string
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if strings.HasPrefix(line, "~") && home != "" {
+			line = filepath.Join(home, strings.TrimPrefix(line, "~"))
+		}
+		roots = append(roots, line)
+	}
+	return roots
+}
+
+// Standard macOS noise directories that never hold projects.
+var homeSkip = map[string]bool{
+	"Library": true, "Applications": true, "Movies": true,
+	"Music": true, "Pictures": true, "Public": true,
+}
+
+// discoverRoots treats every home subdirectory that contains at least
+// one git checkout as a project root, so ~/Dev, ~/Herd, ~/Code or
+// whatever layout someone uses is picked up without configuration.
+func discoverRoots() []string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return nil
 	}
-	// Dev holds regular projects, Herd holds Laravel sites served by Herd.
-	return []string{filepath.Join(home, "Dev"), filepath.Join(home, "Herd")}
+	entries, err := os.ReadDir(home)
+	if err != nil {
+		return nil
+	}
+	var roots []string
+	for _, e := range entries {
+		name := e.Name()
+		if !e.IsDir() || strings.HasPrefix(name, ".") || homeSkip[name] {
+			continue
+		}
+		dir := filepath.Join(home, name)
+		if containsGitCheckout(dir) {
+			roots = append(roots, dir)
+		}
+	}
+	sort.Strings(roots)
+	return roots
+}
+
+func containsGitCheckout(dir string) bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if !e.IsDir() || strings.HasPrefix(name, ".") {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(dir, name, ".git")); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // detect returns every process listening on a TCP port, sorted by kind
