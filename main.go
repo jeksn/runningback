@@ -27,7 +27,7 @@ Usage:
 
 Flags (list / tui):
   --all          also include system processes
-  --root DIR     projects root, repeatable (default $RB_ROOTS or ~/Dev)
+  --root DIR     projects root, repeatable (default $RB_ROOTS or ~/Dev and ~/Herd)
 
 TUI keys:
   up/down  select   o  open URL   x  kill process

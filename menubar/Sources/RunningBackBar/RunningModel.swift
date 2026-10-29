@@ -4,6 +4,7 @@ import SwiftUI
 
 struct Proc: Codable, Identifiable, Hashable {
     let pid: Int
+    let pids: [Int]?
     let command: String
     let label: String
     let cwd: String
@@ -82,10 +83,12 @@ final class RunningModel: ObservableObject {
 
     func kill(_ proc: Proc) {
         guard let bin = Self.binaryPath() else { return }
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: bin)
-        p.arguments = ["kill", String(proc.pid)]
-        try? p.run()
+        for pid in proc.pids ?? [proc.pid] {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: bin)
+            p.arguments = ["kill", String(pid)]
+            try? p.run()
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
             self?.refresh()
         }
