@@ -14,7 +14,7 @@ a live count in the macOS menu bar.
 
 `lsof` finds every process listening on a TCP port, a batched `lsof -p ... -d cwd`
 looks up each process's working directory, and `ps` gets the full command line.
-Anything whose cwd is under a projects root (default `~/Dev`) is shown as a
+Anything whose cwd is under a projects root (default `~/Dev` and `~/Herd`) is shown as a
 project with its URL; known service binaries (mysqld, postgres, redis-server,
 ...) are shown as services; everything else is system noise, hidden unless you
 pass `--all`.
@@ -40,7 +40,7 @@ variable.
 
 ## Configuration
 
-- `RB_ROOTS` — colon-separated list of project roots. Default: `~/Dev`.
+- `RB_ROOTS` — colon-separated list of project roots. Default: `~/Dev` and `~/Herd` (Herd-served Laravel sites).
   Or pass `--root DIR` (repeatable) to `list`/`tui`.
 - `RB_BIN` — path to the `runningback` binary, for the menu bar app.
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -12,6 +13,7 @@ import (
 // Proc is a single process that is listening on at least one TCP port.
 type Proc struct {
 	PID     int    `json:"pid"`
+	Pids    []int  `json:"pids,omitempty"` // set when identical workers were collapsed
 	Command string `json:"command"`
 	Label   string `json:"label"`
 	Cwd     string `json:"cwd"`
@@ -52,7 +54,8 @@ func defaultRoots() []string {
 	if err != nil {
 		return nil
 	}
-	return []string{filepath.Join(home, "Dev")}
+	// Dev holds regular projects, Herd holds Laravel sites served by Herd.
+	return []string{filepath.Join(home, "Dev"), filepath.Join(home, "Herd")}
 }
 
 // detect returns every process listening on a TCP port, sorted by kind
@@ -154,6 +157,8 @@ func detect(f filter) ([]Proc, error) {
 		result = append(result, *p)
 	}
 
+	result = collapseWorkers(result)
+
 	sort.Slice(result, func(i, j int) bool {
 		a, b := result[i], result[j]
 		if a.Kind != b.Kind {
@@ -176,7 +181,8 @@ func classify(p *Proc, roots []string) string {
 		}
 	}
 	if fields := strings.Fields(p.Command); len(fields) > 0 {
-		if serviceBins[filepath.Base(fields[0])] {
+		// Process titles may carry a suffix, e.g. "nginx: worker process".
+		if serviceBins[strings.TrimSuffix(filepath.Base(fields[0]), ":")] {
 			return "service"
 		}
 	}
@@ -185,12 +191,58 @@ func classify(p *Proc, roots []string) string {
 
 func projectName(p *Proc) string {
 	if p.Kind == "dev" && p.Cwd != "" {
-		return filepath.Base(p.Cwd)
+		base := filepath.Base(p.Cwd)
+		// Laravel apps commonly serve from a public/ subdirectory.
+		if base == "public" {
+			base = filepath.Base(filepath.Dir(p.Cwd))
+			if base == "." || base == "/" {
+				return p.Cwd
+			}
+		}
+		return base
 	}
 	if fields := strings.Fields(p.Command); len(fields) > 0 {
-		return filepath.Base(fields[0])
+		// Process titles may carry a suffix, e.g. "nginx: worker process".
+		return strings.TrimSuffix(filepath.Base(fields[0]), ":")
 	}
 	return "pid " + strconv.Itoa(p.PID)
+}
+
+// collapseWorkers merges identical service processes (same binary and
+// ports, e.g. a pool of nginx workers) into a single entry that lists
+// every PID, so the list shows one row instead of eight.
+func collapseWorkers(procs []Proc) []Proc {
+	type key struct{ project, ports, cmd string }
+	index := map[key]int{}
+	out := make([]Proc, 0, len(procs))
+	for _, p := range procs {
+		if p.Kind == "dev" {
+			out = append(out, p)
+			continue
+		}
+		cmd := ""
+		if fields := strings.Fields(p.Command); len(fields) > 0 {
+			cmd = filepath.Base(fields[0])
+		}
+		k := key{p.Project, fmt.Sprint(p.Ports), cmd}
+		if i, ok := index[k]; ok {
+			out[i].Pids = append(out[i].Pids, p.PID)
+			if p.PID < out[i].PID {
+				out[i].PID = p.PID
+				out[i].Command = p.Command
+				out[i].Cwd = p.Cwd
+				out[i].Label = p.Label
+			}
+			continue
+		}
+		p.Pids = []int{p.PID}
+		index[k] = len(out)
+		out = append(out, p)
+	}
+	for i := range out {
+		sort.Ints(out[i].Pids)
+	}
+	return out
 }
 
 // url returns the address to open in a browser, preferring the first
