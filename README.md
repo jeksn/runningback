@@ -28,11 +28,13 @@ or the script name as a fallback.
 
     up/down or j/k   select
     o or enter       open the selected URL in your browser
+    c                copy the selected URL to the clipboard
     x                kill the selected process (SIGTERM)
     r                refresh
     q                quit
 
-The view also auto-refreshes every 5 seconds.
+The view also auto-refreshes every 5 seconds. `runningback kill` accepts
+a port (kills everything listening on it) or a raw PID.
 
 ## Install
 

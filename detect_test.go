@@ -76,6 +76,22 @@ func TestRole(t *testing.T) {
 	}
 }
 
+func TestKillTargets(t *testing.T) {
+	procs := []Proc{
+		{PID: 2588, Kind: "dev", Ports: []int{4322}},
+		{PID: 16321, Pids: []int{16321, 16322}, Kind: "service", Ports: []int{80, 443}},
+	}
+	if got := killTargets(procs, 4322); !reflect.DeepEqual(got, []int{2588}) {
+		t.Fatalf("killTargets(4322) = %v, want [2588]", got)
+	}
+	if got := killTargets(procs, 80); !reflect.DeepEqual(got, []int{16321, 16322}) {
+		t.Fatalf("killTargets(80) = %v, want [16321 16322]", got)
+	}
+	if got := killTargets(procs, 9999); got != nil {
+		t.Fatalf("killTargets(9999) = %v, want nil", got)
+	}
+}
+
 func mkdirAll(t *testing.T, dir string) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {

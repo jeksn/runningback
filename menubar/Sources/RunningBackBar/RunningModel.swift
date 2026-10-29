@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import ServiceManagement
 import SwiftUI
 
 struct Proc: Codable, Identifiable, Hashable {
@@ -33,12 +34,19 @@ struct Proc: Codable, Identifiable, Hashable {
         }
         return String(label.prefix(24))
     }
+
+    // Reverb and similar websocket servers show a bare handshake page
+    // in a browser - copy the URL instead of offering to open it.
+    var browsable: Bool {
+        role != "reverb"
+    }
 }
 
 @MainActor
 final class RunningModel: ObservableObject {
     @Published var items: [Proc] = []
     @Published var lastError: String?
+    @Published var loginEnabled = false
 
     private var started = false
 
@@ -63,6 +71,7 @@ final class RunningModel: ObservableObject {
     func start() {
         guard !started else { return }
         started = true
+        refreshLoginStatus()
         refresh()
         Task { [weak self] in
             while !Task.isCancelled {
@@ -121,5 +130,28 @@ final class RunningModel: ObservableObject {
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
         return data
+    }
+
+    func reveal(_ dir: String) {
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: dir)])
+    }
+
+    // MARK: Launch at Login
+
+    func refreshLoginStatus() {
+        loginEnabled = SMAppService.mainApp.status == .enabled
+    }
+
+    func toggleLaunchAtLogin() {
+        do {
+            if loginEnabled {
+                try SMAppService.mainApp.unregister()
+            } else {
+                try SMAppService.mainApp.register()
+            }
+            refreshLoginStatus()
+        } catch {
+            lastError = "login item: \(error.localizedDescription)"
+        }
     }
 }
