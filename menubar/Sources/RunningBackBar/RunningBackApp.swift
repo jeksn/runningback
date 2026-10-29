@@ -68,12 +68,12 @@ struct MenuContent: View {
             Menu(group.title) {
                 ForEach(group.procs) { proc in
                     if let url = proc.url {
-                        Button("Open \(url)") { model.open(proc) }
+                        Button("Open \(url) \u{2014} \(proc.actionName)") { model.open(proc) }
                     }
                 }
                 Divider()
                 ForEach(group.procs) { proc in
-                    Button("Stop \(String(proc.label.prefix(30))) (pid \(proc.pid))") {
+                    Button("Stop \(proc.actionName) (pid \(proc.pid))") {
                         model.kill(proc)
                     }
                 }

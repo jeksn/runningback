@@ -18,6 +18,7 @@ type Proc struct {
 	Label   string `json:"label"`
 	Cwd     string `json:"cwd"`
 	Dir     string `json:"projectDir,omitempty"` // project root (git checkout) for dev processes
+	Role    string `json:"role,omitempty"`      // what the process does: server, vite, reverb, ...
 	Project string `json:"project"`
 	Kind    string `json:"kind"` // "dev", "service" or "system"
 	Ports   []int  `json:"ports"`
@@ -151,6 +152,7 @@ func detect(f filter) ([]Proc, error) {
 		p.Kind = classify(p, f.Roots)
 		if p.Kind == "dev" {
 			p.Dir = projectRoot(p.Cwd, f.Roots)
+			p.Role = role(p.Command)
 		}
 		p.Project = projectName(p)
 		sort.Ints(p.Ports)
@@ -177,6 +179,43 @@ func detect(f filter) ([]Proc, error) {
 		return a.PID < b.PID
 	})
 	return result, nil
+}
+
+// role names what a dev process does inside its project, inferred
+// from the command line: Laravel's "artisan serve" becomes "server",
+// Vite dev servers become "vite", "artisan reverb:start" becomes
+// "reverb", and so on. Empty when nothing recognizable matches.
+func role(cmd string) string {
+	low := strings.ToLower(cmd)
+	fields := strings.Fields(low)
+	if i := slices.Index(fields, "artisan"); i >= 0 && i+1 < len(fields) {
+		sub := strings.TrimSuffix(strings.TrimSuffix(fields[i+1], ":start"), ":work")
+		switch sub {
+		case "serve":
+			return "server"
+		case "queue", "queue:listen":
+			return "queue"
+		case "horizon", "horizon:supervisor":
+			return "horizon"
+		}
+		return sub
+	}
+	for _, kw := range []string{"vite", "astro", "next", "nuxt", "webpack", "remix", "expo"} {
+		if strings.Contains(low, kw) {
+			return kw
+		}
+	}
+	if strings.Contains(low, "server.php") {
+		return "server"
+	}
+	// Fallback: the script being run, without its extension.
+	for _, f := range fields[min(1, len(fields)):] {
+		b := filepath.Base(f)
+		if ext := filepath.Ext(b); ext == ".js" || ext == ".mjs" || ext == ".php" || ext == ".ts" {
+			return strings.TrimSuffix(b, ext)
+		}
+	}
+	return ""
 }
 
 func groupKey(p Proc) string {

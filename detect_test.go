@@ -55,6 +55,27 @@ func TestProjectName(t *testing.T) {
 	}
 }
 
+func TestRole(t *testing.T) {
+	cases := map[string]string{
+		// Real command lines seen on this machine.
+		"/Users/jeksn/Library/Application Support/Herd/bin/php85 -S 127.0.0.1:8000 /Users/jeksn/Herd/satsuma/vendor/laravel/framework/src/Illuminate/Foundation/Console/../resources/server.php": "server",
+		"/Users/jeksn/.vite-plus/js_runtime/node/24.22.1/bin/node /Users/jeksn/Herd/satsuma/node_modules/.pnpm/@voidzero-dev+vite-plus-core@1.4.0/node_modules/@voidzero-dev/vite-plus-core/dist/vite/bin/vite.js dev": "vite",
+		"node /Users/jeksn/Herd/satsuma/node_modules/.bin/../.pnpm/vite-plus@1.4.0/node_modules/vite-plus/bin/vp dev": "vite",
+		"/opt/homebrew/Cellar/node/26.8.2/bin/node /Users/jeksn/Dev/work-projects/barnvagn/node_modules/astro/bin/astro.mjs dev": "astro",
+		// Other common patterns.
+		"php artisan serve":                                       "server",
+		"php artisan reverb:start --port=6001":                   "reverb",
+		"/Users/jeksn/Herd/bin/php85 artisan queue:work --once":  "queue",
+		"php artisan horizon":                                     "horizon",
+		"node server.js":                                          "server",
+	}
+	for cmd, want := range cases {
+		if got := role(cmd); got != want {
+			t.Errorf("role(%q) = %q, want %q", cmd, got, want)
+		}
+	}
+}
+
 func mkdirAll(t *testing.T, dir string) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
