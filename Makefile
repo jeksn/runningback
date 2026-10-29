@@ -19,6 +19,8 @@ build-bar: build
 	mkdir -p build/RunningBackBar.app/Contents/MacOS build/RunningBackBar.app/Contents/Resources
 	cp menubar/.build/release/RunningBackBar build/RunningBackBar.app/Contents/MacOS/RunningBackBar
 	cp build/runningback build/RunningBackBar.app/Contents/Resources/runningback
+	swift tools/make_icon.swift
+	cp build/AppIcon.icns build/RunningBackBar.app/Contents/Resources/AppIcon.icns
 	printf '%s\n' \
 		'<?xml version="1.0" encoding="UTF-8"?>' \
 		'<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
@@ -29,6 +31,7 @@ build-bar: build
 		'  <key>CFBundleIdentifier</key><string>dev.jeksn.runningback.bar</string>' \
 		'  <key>CFBundleExecutable</key><string>RunningBackBar</string>' \
 		'  <key>CFBundlePackageType</key><string>APPL</string>' \
+		'  <key>CFBundleIconFile</key><string>AppIcon.icns</string>' \
 		'  <key>LSMinimumSystemVersion</key><string>13.0</string>' \
 		'  <key>LSUIElement</key><true/>' \
 		'  <key>NSHighResolutionCapable</key><true/>' \
