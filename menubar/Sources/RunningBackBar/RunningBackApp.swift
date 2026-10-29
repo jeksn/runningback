@@ -9,7 +9,12 @@ struct RunningBackApp: App {
         MenuBarExtra(content: {
             MenuContent()
                 .environmentObject(model)
-                .onAppear { model.start() }
+                .onAppear {
+                    model.start()
+                    model.setMenuOpen(true)
+                    model.refresh()
+                }
+                .onDisappear { model.setMenuOpen(false) }
         }, label: {
             let helmet = HelmetIcon.menuBarImage()
             if model.items.isEmpty {
