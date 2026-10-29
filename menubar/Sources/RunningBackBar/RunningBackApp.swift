@@ -21,6 +21,38 @@ struct RunningBackApp: App {
     }
 }
 
+// DevGroup bundles every dev server that belongs to the same project
+// checkout, so a Vite server and a php server show as one entry.
+struct DevGroup: Identifiable {
+    let dir: String
+    var procs: [Proc]
+
+    var id: String { dir }
+    var name: String { procs.first?.project ?? dir }
+    var portsText: String {
+        var seen = Set<Int>()
+        return procs
+            .flatMap { $0.ports }
+            .filter { seen.insert($0).inserted }
+            .map(String.init)
+            .joined(separator: ",")
+    }
+    var title: String { "\(name) \u{2014} \(portsText)" }
+}
+
+func devGroups(_ procs: [Proc]) -> [DevGroup] {
+    var out: [DevGroup] = []
+    for p in procs {
+        let key = p.projectDir ?? p.cwd
+        if !out.isEmpty && out[out.count - 1].dir == key {
+            out[out.count - 1].procs.append(p)
+        } else {
+            out.append(DevGroup(dir: key, procs: [p]))
+        }
+    }
+    return out
+}
+
 struct MenuContent: View {
     @EnvironmentObject private var model: RunningModel
 
@@ -32,16 +64,22 @@ struct MenuContent: View {
             Text(model.lastError ?? "No dev servers running")
         }
 
-        ForEach(dev) { proc in
-            Menu(proc.menuTitle) {
-                if let url = proc.url {
-                    Button("Open \(url)") { model.open(proc) }
-                    Button("Copy URL") { model.copy(url) }
-                    Divider()
+        ForEach(devGroups(dev)) { group in
+            Menu(group.title) {
+                ForEach(group.procs) { proc in
+                    if let url = proc.url {
+                        Button("Open \(url)") { model.open(proc) }
+                    }
                 }
-                Button("Copy path \(proc.cwd)") { model.copy(proc.cwd) }
                 Divider()
-                Button("Stop \(proc.label) (pid \(proc.pid))") { model.kill(proc) }
+                ForEach(group.procs) { proc in
+                    Button("Stop \(String(proc.label.prefix(30))) (pid \(proc.pid))") {
+                        model.kill(proc)
+                    }
+                }
+                Divider()
+                Button("Stop all") { group.procs.forEach { model.kill($0) } }
+                Button("Copy path \(group.dir)") { model.copy(group.dir) }
             }
         }
 

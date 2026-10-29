@@ -94,22 +94,30 @@ func frame(procs []Proc, sel int, status string, f filter) string {
 	fmt.Fprintf(&b, "%s runningback%s %s%d running%s\r\n\r\n",
 		ansiBold, ansiOff, ansiDim, len(procs), ansiOff)
 
-	lastKind := ""
+	lastKind, lastDir := "", ""
 	for i, p := range procs {
 		if p.Kind != lastKind {
 			lastKind = p.Kind
-			fmt.Fprintf(&b, "%s %s%s\r\n", ansiDim, kindTitle(p.Kind), ansiOff)
+			lastDir = ""
+			fmt.Fprintf(&b, "\r\n%s %s%s\r\n", ansiBold, kindTitle(p.Kind), ansiOff)
 		}
 		marker := "  "
 		if i == sel {
 			marker = "▶ "
 		}
-		labelShown := p.Label
-		if p.Kind != "dev" {
-			labelShown = ""
+		var row string
+		if p.Kind == "dev" {
+			if p.Dir != lastDir {
+				lastDir = p.Dir
+				fmt.Fprintf(&b, "\r\n %s%-22s%s %s%s%s\r\n",
+					ansiBold, p.Project, ansiOff, ansiDim, relPath(p.Dir, f.Roots), ansiOff)
+			}
+			row = fmt.Sprintf("%s  %-26s %s%-28s%s %s pid %d",
+				marker, p.Label, ansiURL, detail(p), ansiOff, ansiDim, p.PID)
+		} else {
+			row = fmt.Sprintf("%s%-20s %s%-28s%s %s%s pid %d",
+				marker, p.Project, ansiURL, detail(p), ansiOff, ansiDim, trunc(p.Label, 34), p.PID)
 		}
-		row := fmt.Sprintf("%s%-20s %s%-28s%s %s%s pid %d",
-			marker, p.Project, ansiURL, detail(p), ansiOff, ansiDim, trunc(labelShown, 34), p.PID)
 		row = trunc(row, w-1)
 		if i == sel {
 			fmt.Fprintf(&b, "%s%s%s\r\n", ansiRev, pad(row, w-1), ansiOff)
@@ -122,7 +130,7 @@ func frame(procs []Proc, sel int, status string, f filter) string {
 	if len(procs) > 0 {
 		p := procs[sel]
 		if p.Kind == "dev" {
-			fmt.Fprintf(&b, "%s %s%s\r\n", ansiDim, relPath(p, f.Roots), ansiOff)
+			fmt.Fprintf(&b, "%s %s%s\r\n", ansiDim, relPath(p.Cwd, f.Roots), ansiOff)
 		}
 	}
 	fmt.Fprintf(&b, "%s r refresh · o open · x kill · q quit%s\r\n", ansiDim, ansiOff)
