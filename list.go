@@ -8,6 +8,11 @@ import (
 
 func printList(w io.Writer, procs []Proc, f filter) {
 	if len(procs) == 0 {
+		if len(f.Roots) == 0 {
+			fmt.Fprintln(w, "nothing running - no project roots found;")
+			fmt.Fprintln(w, "add one per line to ~/.config/runningback/roots or set RB_ROOTS")
+			return
+		}
 		fmt.Fprintln(w, "nothing running under "+strings.Join(f.Roots, ", "))
 		return
 	}
