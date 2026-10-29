@@ -29,7 +29,7 @@ func printList(w io.Writer, procs []Proc, f filter) {
 				lastDir = p.Dir
 				fmt.Fprintf(w, "  %-22s %s\n", p.Project, relPath(p.Dir, f.Roots))
 			}
-			fmt.Fprintf(w, "    %-26s %-30s pid %d\n", trunc(p.Label, 26), detail(p), p.PID)
+			fmt.Fprintf(w, "    %-10s %-24s %-30s pid %d\n", p.Role, trunc(p.Label, 24), detail(p), p.PID)
 			continue
 		}
 		fmt.Fprintf(w, "  %-22s %-30s pid %d\n", p.Project, detail(p), p.PID)

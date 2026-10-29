@@ -19,6 +19,11 @@ project with its URL; known service binaries (mysqld, postgres, redis-server,
 ...) are shown as services; everything else is system noise, hidden unless you
 pass `--all`.
 
+Dev servers are grouped by project (the nearest git checkout above the process
+cwd) and each process gets a role inferred from its command line — `server`
+(artisan serve / php -S), `vite`, `reverb`, `queue`, `horizon`, `astro`, `next`,
+or the script name as a fallback.
+
 ## TUI keys
 
     up/down or j/k   select

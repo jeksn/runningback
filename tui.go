@@ -112,8 +112,8 @@ func frame(procs []Proc, sel int, status string, f filter) string {
 				fmt.Fprintf(&b, "\r\n %s%-22s%s %s%s%s\r\n",
 					ansiBold, p.Project, ansiOff, ansiDim, relPath(p.Dir, f.Roots), ansiOff)
 			}
-			row = fmt.Sprintf("%s  %-26s %s%-28s%s %s pid %d",
-				marker, p.Label, ansiURL, detail(p), ansiOff, ansiDim, p.PID)
+			row = fmt.Sprintf("%s%s%-9s%s %-24s %s%-28s%s %s pid %d",
+				marker, ansiBold, p.Role, ansiOff, trunc(p.Label, 24), ansiURL, detail(p), ansiOff, ansiDim, p.PID)
 		} else {
 			row = fmt.Sprintf("%s%-20s %s%-28s%s %s%s pid %d",
 				marker, p.Project, ansiURL, detail(p), ansiOff, ansiDim, trunc(p.Label, 34), p.PID)

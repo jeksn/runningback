@@ -9,6 +9,7 @@ struct Proc: Codable, Identifiable, Hashable {
     let label: String
     let cwd: String
     let projectDir: String?
+    let role: String?
     let project: String
     let kind: String
     let ports: [Int]
@@ -23,6 +24,14 @@ struct Proc: Codable, Identifiable, Hashable {
     var menuTitle: String {
         let port = ports.first.map { " \u{2014} \($0)" } ?? ""
         return project + port
+    }
+
+    // "vite" or the first words of the command line when unrecognized.
+    var actionName: String {
+        if let role = role, !role.isEmpty {
+            return role
+        }
+        return String(label.prefix(24))
     }
 }
 
