@@ -11,10 +11,11 @@ struct RunningBackApp: App {
                 .environmentObject(model)
                 .onAppear { model.start() }
         }, label: {
+            let helmet = HelmetIcon.menuBarImage()
             if model.items.isEmpty {
-                Image(systemName: "figure.run")
+                Image(nsImage: helmet)
             } else {
-                Label(String(model.items.count), systemImage: "figure.run")
+                Label { Text(String(model.items.count)) } icon: { Image(nsImage: helmet) }
             }
         })
         .menuBarExtraStyle(.menu)
