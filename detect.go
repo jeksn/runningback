@@ -17,6 +17,7 @@ type Proc struct {
 	Command string `json:"command"`
 	Label   string `json:"label"`
 	Cwd     string `json:"cwd"`
+	Dir     string `json:"projectDir,omitempty"` // project root (git checkout) for dev processes
 	Project string `json:"project"`
 	Kind    string `json:"kind"` // "dev", "service" or "system"
 	Ports   []int  `json:"ports"`
@@ -148,6 +149,9 @@ func detect(f filter) ([]Proc, error) {
 		p := procs[pid]
 		p.Label = label(p.Command)
 		p.Kind = classify(p, f.Roots)
+		if p.Kind == "dev" {
+			p.Dir = projectRoot(p.Cwd, f.Roots)
+		}
 		p.Project = projectName(p)
 		sort.Ints(p.Ports)
 		p.URL = url(p)
@@ -167,9 +171,45 @@ func detect(f filter) ([]Proc, error) {
 		if a.Project != b.Project {
 			return a.Project < b.Project
 		}
+		if ka, kb := groupKey(a), groupKey(b); ka != kb {
+			return ka < kb
+		}
 		return a.PID < b.PID
 	})
 	return result, nil
+}
+
+func groupKey(p Proc) string {
+	if p.Dir != "" {
+		return p.Dir
+	}
+	return p.Project
+}
+
+// projectRoot walks up from a process cwd to the directory of the
+// project it belongs to: the closest ancestor containing a .git, or
+// the directory directly under one of the roots. This makes a Vite
+// server and a php server both resolve to the same project.
+func projectRoot(cwd string, roots []string) string {
+	if cwd == "" {
+		return cwd
+	}
+	dir := cwd
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return dir
+		}
+		for _, root := range roots {
+			if filepath.Dir(dir) == root {
+				return dir
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return cwd
+		}
+		dir = parent
+	}
 }
 
 // classify decides whether a process belongs to one of the project
@@ -190,16 +230,13 @@ func classify(p *Proc, roots []string) string {
 }
 
 func projectName(p *Proc) string {
-	if p.Kind == "dev" && p.Cwd != "" {
-		base := filepath.Base(p.Cwd)
-		// Laravel apps commonly serve from a public/ subdirectory.
-		if base == "public" {
-			base = filepath.Base(filepath.Dir(p.Cwd))
-			if base == "." || base == "/" {
-				return p.Cwd
-			}
+	if p.Kind == "dev" {
+		if p.Dir != "" {
+			return filepath.Base(p.Dir)
 		}
-		return base
+		if p.Cwd != "" {
+			return filepath.Base(p.Cwd)
+		}
 	}
 	if fields := strings.Fields(p.Command); len(fields) > 0 {
 		// Process titles may carry a suffix, e.g. "nginx: worker process".
@@ -290,13 +327,12 @@ func kindRank(kind string) int {
 	return 2
 }
 
-// relPath shows a dev project path relative to its matched root,
-// with ~ for the home directory.
-func relPath(p Proc, roots []string) string {
-	cwd := p.Cwd
+// relPath shows a project path relative to the root it was matched
+// under, with ~ for the home directory.
+func relPath(path string, roots []string) string {
 	for _, root := range roots {
-		if cwd == root || strings.HasPrefix(cwd, root+"/") {
-			rel := strings.Trim(strings.TrimPrefix(cwd, root), "/")
+		if path == root || strings.HasPrefix(path, root+"/") {
+			rel := strings.Trim(strings.TrimPrefix(path, root), "/")
 			if rel == "" {
 				return "~/" + filepath.Base(root)
 			}
@@ -304,7 +340,7 @@ func relPath(p Proc, roots []string) string {
 		}
 	}
 	if home, err := os.UserHomeDir(); err == nil {
-		cwd = strings.Replace(cwd, home, "~", 1)
+		path = strings.Replace(path, home, "~", 1)
 	}
-	return cwd
+	return path
 }

@@ -8,6 +8,7 @@ struct Proc: Codable, Identifiable, Hashable {
     let command: String
     let label: String
     let cwd: String
+    let projectDir: String?
     let project: String
     let kind: String
     let ports: [Int]
