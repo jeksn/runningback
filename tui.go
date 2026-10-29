@@ -133,7 +133,7 @@ func frame(procs []Proc, sel int, status string, f filter) string {
 			fmt.Fprintf(&b, "%s %s%s\r\n", ansiDim, relPath(p.Cwd, f.Roots), ansiOff)
 		}
 	}
-	fmt.Fprintf(&b, "%s r refresh · o open · x kill · q quit%s\r\n", ansiDim, ansiOff)
+	fmt.Fprintf(&b, "%s r refresh · o open · c copy · x kill · q quit%s\r\n", ansiDim, ansiOff)
 	if status != "" {
 		fmt.Fprintf(&b, "%s %s%s", ansiWarn, status, ansiOff)
 	}
@@ -142,6 +142,15 @@ func frame(procs []Proc, sel int, status string, f filter) string {
 
 func render(procs []Proc, sel int, status string, f filter) {
 	fmt.Fprint(os.Stdout, frame(procs, sel, status, f))
+}
+
+func copyToClipboard(text string) string {
+	cmd := exec.Command("pbcopy")
+	cmd.Stdin = strings.NewReader(text)
+	if err := cmd.Run(); err != nil {
+		return err.Error()
+	}
+	return "copied " + text
 }
 
 func runTUI(f filter) error {
@@ -243,6 +252,10 @@ func runTUI(f filter) error {
 					} else {
 						status = err.Error()
 					}
+				}
+			case byteIs('c'):
+				if len(procs) > 0 && procs[sel].URL != "" {
+					status = copyToClipboard(procs[sel].URL)
 				}
 			case byteIs('x'):
 				if len(procs) > 0 {

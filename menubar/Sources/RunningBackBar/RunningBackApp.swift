@@ -95,6 +95,9 @@ struct MenuContent: View {
         }
 
         Divider()
+        Button(model.loginEnabled ? "Launch at Login: On" : "Launch at Login: Off") {
+            model.toggleLaunchAtLogin()
+        }
         Button("Refresh") { model.refresh() }
         Button("Quit") { NSApplication.shared.terminate(nil) }
     }

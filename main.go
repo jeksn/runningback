@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -23,7 +24,7 @@ Usage:
   runningback tui           interactive TUI
   runningback list          one-shot list
   runningback list --json   machine-readable output (used by the menu bar app)
-  runningback kill PID      send SIGTERM to a process
+  runningback kill PID|PORT  send SIGTERM to a process or port
 
 Flags (list / tui):
   --all          also include system processes
@@ -115,15 +116,43 @@ func cmdTUI(args []string) error {
 
 func cmdKill(args []string) error {
 	if len(args) != 1 {
-		return fmt.Errorf("usage: runningback kill PID (get PIDs from runningback list)")
+		return fmt.Errorf("usage: runningback kill PID|PORT")
 	}
-	pid, err := strconv.Atoi(args[0])
+	n, err := strconv.Atoi(args[0])
 	if err != nil {
-		return fmt.Errorf("not a PID: %s", args[0])
+		return fmt.Errorf("not a PID or port: %s", args[0])
 	}
-	if err := syscall.Kill(pid, syscall.SIGTERM); err != nil {
+	// If something is listening on that port, kill it - the port is
+	// what users see in the list. Otherwise treat the argument as a PID.
+	f := filter{All: true, Roots: defaultRoots()}
+	if procs, err := detect(f); err == nil {
+		if pids := killTargets(procs, n); len(pids) > 0 {
+			for _, pid := range pids {
+				if err := syscall.Kill(pid, syscall.SIGTERM); err != nil {
+					return err
+				}
+			}
+			fmt.Printf("sent SIGTERM to port %d\n", n)
+			return nil
+		}
+	}
+	if err := syscall.Kill(n, syscall.SIGTERM); err != nil {
 		return err
 	}
-	fmt.Printf("sent SIGTERM to pid %d\n", pid)
+	fmt.Printf("sent SIGTERM to pid %d\n", n)
 	return nil
+}
+
+// killTargets collects every PID listening on the given port.
+func killTargets(procs []Proc, port int) []int {
+	var pids []int
+	for _, p := range procs {
+		if slices.Contains(p.Ports, port) {
+			pids = append(pids, p.Pids...)
+			if len(p.Pids) == 0 {
+				pids = append(pids, p.PID)
+			}
+		}
+	}
+	return pids
 }
