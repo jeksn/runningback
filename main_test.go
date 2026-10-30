@@ -18,7 +18,7 @@ func TestFrameRendersWithoutPanic(t *testing.T) {
 		out := frame(procs, sel, "", f)
 		// Helmet banner on tall terminals, exactly one group header,
 		// one row per process.
-		if !strings.Contains(out, ":-=++=-:") ||
+		if !strings.Contains(out, "⣿") ||
 			strings.Count(out, "\x1b[1msatsuma") != 1 ||
 			!strings.Contains(out, "vite.js dev") || !strings.Contains(out, "php85") {
 			t.Fatalf("frame wrong grouping for sel=%d:\n%s", sel, out)

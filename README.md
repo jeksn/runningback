@@ -35,8 +35,7 @@ or the script name as a fallback.
 
 The view also auto-refreshes every 5 seconds. `runningback kill` accepts
 a port (kills everything listening on it) or a raw PID. On tall
-terminals the TUI shows the helmet as ASCII art next to the title
-(regenerate with `swift tools/make_ascii.swift 24 12`).
+terminals the TUI shows a braille helmet banner next to the title.
 
 ## Install
 
