@@ -16,8 +16,10 @@ func TestFrameRendersWithoutPanic(t *testing.T) {
 	f := filter{Roots: []string{"/Users/jeksn/Dev", "/Users/jeksn/Herd"}}
 	for sel := -1; sel <= len(procs); sel++ {
 		out := frame(procs, sel, "", f)
-		// Exactly one group header (ANSI bold prefix), one row per process.
-		if strings.Count(out, "\x1b[1msatsuma") != 1 ||
+		// Helmet banner on tall terminals, exactly one group header,
+		// one row per process.
+		if !strings.Contains(out, ":-=++=-:") ||
+			strings.Count(out, "\x1b[1msatsuma") != 1 ||
 			!strings.Contains(out, "vite.js dev") || !strings.Contains(out, "php85") {
 			t.Fatalf("frame wrong grouping for sel=%d:\n%s", sel, out)
 		}
