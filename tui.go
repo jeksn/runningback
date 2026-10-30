@@ -105,6 +105,43 @@ const helmetArt = `⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀�
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠒⠻⠿⠖⠚⠃⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`
 
+// breakdown summarizes the running list as "1 project · 4 services",
+// counting dev processes by project checkout rather than by process.
+func breakdown(procs []Proc) string {
+	projects := map[string]bool{}
+	services := 0
+	for _, p := range procs {
+		if p.Kind == "dev" {
+			key := p.Dir
+			if key == "" {
+				key = p.Cwd
+			}
+			projects[key] = true
+		} else {
+			services++
+		}
+	}
+	var parts []string
+	if n := len(projects); n > 0 {
+		if n == 1 {
+			parts = append(parts, "1 project")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d projects", n))
+		}
+	}
+	if services > 0 {
+		if services == 1 {
+			parts = append(parts, "1 service")
+		} else {
+			parts = append(parts, fmt.Sprintf("%d services", services))
+		}
+	}
+	if len(parts) == 0 {
+		return "nothing running"
+	}
+	return strings.Join(parts, " · ")
+}
+
 func termHeight() int {
 	ws := winsize{}
 	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, os.Stdout.Fd(), 0x40087468, uintptr(unsafe.Pointer(&ws)))
@@ -137,14 +174,14 @@ func frame(procs []Proc, sel int, status string, f filter) string {
 				row += fmt.Sprintf("    %srunningback%s", ansiBold, ansiOff)
 			}
 			if i == 7 {
-				row += fmt.Sprintf("    %s%d running%s", ansiDim, len(procs), ansiOff)
+				row += fmt.Sprintf("    %s%s%s", ansiDim, breakdown(procs), ansiOff)
 			}
 			fmt.Fprintf(&b, "%s\r\n", trunc(row, w-1))
 		}
 		fmt.Fprintf(&b, "\r\n")
 	} else {
-		fmt.Fprintf(&b, "%s runningback%s %s%d running%s\r\n\r\n",
-			ansiBold, ansiOff, ansiDim, len(procs), ansiOff)
+		fmt.Fprintf(&b, "%s runningback%s %s%s%s\r\n\r\n",
+			ansiBold, ansiOff, ansiDim, breakdown(procs), ansiOff)
 	}
 
 	lastKind, lastDir := "", ""

@@ -25,8 +25,29 @@ func TestFrameRendersWithoutPanic(t *testing.T) {
 		}
 	}
 	empty := frame(nil, 0, "sent SIGTERM", f)
-	if !strings.Contains(empty, "0 running") || !strings.Contains(empty, "SIGTERM") {
+	if !strings.Contains(empty, "nothing running") || !strings.Contains(empty, "SIGTERM") {
 		t.Fatalf("unexpected empty frame:\n%s", empty)
+	}
+}
+
+func TestBreakdown(t *testing.T) {
+	procs := []Proc{
+		{Kind: "dev", Dir: "/a/satsuma"},
+		{Kind: "dev", Dir: "/a/satsuma"},
+		{Kind: "dev", Dir: "/a/barnvagn"},
+		{Kind: "service"},
+		{Kind: "service"},
+		{Kind: "service"},
+		{Kind: "service"},
+	}
+	if got := breakdown(procs); got != "2 projects · 4 services" {
+		t.Fatalf("breakdown = %q, want %q", got, "2 projects · 4 services")
+	}
+	if got := breakdown(procs[:2]); got != "1 project · 0 services" && got != "1 project" {
+		t.Fatalf("breakdown = %q", got)
+	}
+	if got := breakdown(nil); got != "nothing running" {
+		t.Fatalf("breakdown = %q", got)
 	}
 }
 
