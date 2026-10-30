@@ -34,8 +34,8 @@ or the script name as a fallback.
     q                quit
 
 The view also auto-refreshes every 5 seconds. `runningback kill` accepts
-a port (kills everything listening on it) or a raw PID. On tall
-terminals the TUI shows a braille helmet banner next to the title.
+a port (kills everything listening on it) or a raw PID. On roomy
+terminals the TUI shows a figlet wordmark header.
 
 ## Install
 

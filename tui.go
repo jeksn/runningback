@@ -86,25 +86,15 @@ func clampSel(sel, n int) int {
 	return sel
 }
 
-// helmetArt is the braille football helmet shown in the TUI banner.
-// tools/make_ascii.swift can regenerate an ASCII alternative from the
-// lucide icon paths.
-const helmetArt = `⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⢀⣀⣤⣤⣤⣤⣶⣶⣶⣤⣤⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡄⠀⠀⠀⠀
-⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀
-⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠿⠛⢛⣉⣁⡄⠀⠀⠀
-⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠋⣉⣠⣴⠶⠛⠋⠉⠁⠀⠀⠀⠀
-⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⣠⣶⣿⡟⢹⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⢸⣿⣿⣿⣿⣿⣿⣿⠟⣉⣉⡉⠀⣾⣿⣿⣿⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠘⣿⣿⣿⣿⣿⣿⡇⠰⣿⣿⣿⠀⢹⣿⣿⣿⠀⢸⣇⠀⠀⢀⣀⣀⣤⡀⠀⠀
-⠀⠀⢹⣿⣿⣿⣿⣿⣿⣄⠙⠛⠋⠠⣤⣤⣼⡿⠛⠛⣿⠛⠛⢻⣏⠉⠙⣷⠀⠀
-⠀⠀⠀⠋⠉⠉⠉⠻⣿⣿⣿⣿⣿⣦⣄⣩⣿⣥⣄⣀⣻⣦⣤⣤⣿⣶⡶⢿⡇⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢿⣿⣿⣿⡿⠋⠀⠉⠉⠉⠉⢿⡉⠀⢸⡇⠀⢸⡇⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠒⠻⠿⠖⠚⠃⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀`
-
+// bannerArt is the figlet wordmark shown in the TUI header on
+// roomy terminals. One line contains backticks, so the constant
+// is built with string concatenation.
+const bannerArt = `                           _             __               __
+   _______  ______  ____  (_)___  ____ _/ /_  ____ ______/ /__
+  / ___/ / / / __ \/ __ \/ / __ ` + "`" + `/ __ ` + "`" + `/ ___/ //_/
+ / /  / /_/ / / / / / / / / / / / /_/ / /_/ / /_/ / /__/ ,<
+/_/   \__,_/_/ /_/_/ /_/_/_/ /_/\__, /_.___/\__,_/\___/_/|_|
+                               /____/`
 // breakdown summarizes the running list as "1 project · 4 services",
 // counting dev processes by project checkout rather than by process.
 func breakdown(procs []Proc) string {
@@ -157,28 +147,18 @@ func frame(procs []Proc, sel int, status string, f filter) string {
 	w := termWidth()
 	b.WriteString("\033[H\033[2J")
 
-	artLines := strings.Split(helmetArt, "\n")
+	artLines := strings.Split(bannerArt, "\n")
 	maxArt := 0
 	for _, line := range artLines {
 		if n := len([]rune(line)); n > maxArt {
 			maxArt = n
 		}
 	}
-	if termHeight() >= 34 && w >= maxArt+28 {
-		for i, line := range artLines {
-			row := fmt.Sprintf(" %s%s%s", ansiDim, line, ansiOff)
-			if n := maxArt - len([]rune(line)); n > 0 {
-				row += strings.Repeat(" ", n)
-			}
-			if i == 6 {
-				row += fmt.Sprintf("    %srunningback%s", ansiBold, ansiOff)
-			}
-			if i == 7 {
-				row += fmt.Sprintf("    %s%s%s", ansiDim, breakdown(procs), ansiOff)
-			}
-			fmt.Fprintf(&b, "%s\r\n", trunc(row, w-1))
+	if termHeight() >= 24 && w >= maxArt+2 {
+		for _, line := range artLines {
+			fmt.Fprintf(&b, "%s%s%s\r\n", ansiURL, trunc(line, w-1), ansiOff)
 		}
-		fmt.Fprintf(&b, "\r\n")
+		fmt.Fprintf(&b, "\r\n %s%s%s\r\n\r\n", ansiDim, breakdown(procs), ansiOff)
 	} else {
 		fmt.Fprintf(&b, "%s runningback%s %s%s%s\r\n\r\n",
 			ansiBold, ansiOff, ansiDim, breakdown(procs), ansiOff)
