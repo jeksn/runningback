@@ -22,6 +22,7 @@ type Proc struct {
 	Project string `json:"project"`
 	Kind    string `json:"kind"` // "dev", "service" or "system"
 	Ports   []int  `json:"ports"`
+	Age     string `json:"age,omitempty"` // humanized uptime, e.g. "2h 14m"
 	URL     string `json:"url,omitempty"`
 }
 
@@ -212,20 +213,23 @@ func detect(f filter) ([]Proc, error) {
 		}
 	}
 
-	// Full command lines, one batched ps call.
-	psOut, _ := commandOutput("ps", "-o", "pid=,command=", "-p", pidList)
+	// Full command lines and uptimes, one batched ps call.
+	psOut, _ := commandOutput("ps", "-o", "pid=,etime=,command=", "-p", pidList)
 	for _, line := range strings.Split(string(psOut), "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 2 {
+		if len(fields) < 3 {
 			continue
 		}
 		pid, err := strconv.Atoi(fields[0])
 		if err != nil {
 			continue
 		}
-		if p, ok := procs[pid]; ok {
-			p.Command = strings.Join(fields[1:], " ")
+		p, ok := procs[pid]
+		if !ok {
+			continue
 		}
+		p.Command = strings.Join(fields[2:], " ")
+		p.Age = humanAge(fields[1])
 	}
 
 	result := []Proc{}
@@ -299,6 +303,43 @@ func role(cmd string) string {
 		}
 	}
 	return ""
+}
+
+// trim0 drops ps's zero padding: "04" -> "4".
+func trim0(s string) string {
+	for len(s) > 1 && s[0] == '0' {
+		s = s[1:]
+	}
+	return s
+}
+
+// humanAge turns a ps etime (e.g. "04:02", "2-03:14:22") into a short
+// human form ("4m", "2d 3h").
+func humanAge(etime string) string {
+	days := ""
+	if i := strings.Index(etime, "-"); i >= 0 {
+		days = trim0(etime[:i])
+		etime = etime[i+1:]
+	}
+	t := strings.Split(etime, ":")
+	// t is [ss], [mm:ss] or [hh:mm:ss].
+	ss, mm, hh := trim0(t[len(t)-1]), "", ""
+	if len(t) >= 2 {
+		mm = trim0(t[len(t)-2])
+	}
+	if len(t) >= 3 {
+		hh = trim0(t[len(t)-3])
+	}
+	switch {
+	case days != "":
+		return days + "d " + hh + "h"
+	case hh != "":
+		return hh + "h " + mm + "m"
+	case mm != "":
+		return mm + "m"
+	default:
+		return ss + "s"
+	}
 }
 
 func groupKey(p Proc) string {

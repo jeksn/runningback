@@ -11,10 +11,8 @@ struct RunningBackApp: App {
                 .environmentObject(model)
                 .onAppear {
                     model.start()
-                    model.setMenuOpen(true)
                     model.refresh()
                 }
-                .onDisappear { model.setMenuOpen(false) }
         }, label: {
             let helmet = HelmetIcon.menuBarImage()
             if model.items.isEmpty {
@@ -79,7 +77,7 @@ struct MenuContent: View {
                 }
                 Divider()
                 ForEach(group.procs) { proc in
-                    Button("Stop \(proc.actionName) (pid \(proc.pid))") {
+                    Button("Stop \(proc.actionName) (pid \(proc.pid), up \(proc.age ?? "?"))") {
                         model.kill(proc)
                     }
                 }
@@ -104,6 +102,12 @@ struct MenuContent: View {
             model.toggleLaunchAtLogin()
         }
         Button("Refresh") { model.refresh() }
+        if let updated = model.lastUpdated {
+            Text("updated \(updated.formatted(date: .omitted, time: .standard))")
+        }
+        if let error = model.lastError {
+            Text(error)
+        }
         Button("Quit") { NSApplication.shared.terminate(nil) }
     }
 }

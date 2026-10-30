@@ -112,6 +112,20 @@ func TestDefaultRootsDiscovery(t *testing.T) {
 	}
 }
 
+func TestHumanAge(t *testing.T) {
+	cases := map[string]string{
+		"42":        "42s",
+		"04:02":     "4m",
+		"03:14:22":  "3h 14m",
+		"2-03:14:22": "2d 3h",
+	}
+	for etime, want := range cases {
+		if got := humanAge(etime); got != want {
+			t.Errorf("humanAge(%q) = %q, want %q", etime, got, want)
+		}
+	}
+}
+
 func TestKillTargets(t *testing.T) {
 	procs := []Proc{
 		{PID: 2588, Kind: "dev", Ports: []int{4322}},
