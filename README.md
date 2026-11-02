@@ -87,6 +87,11 @@ Ways to hand this to other people, easiest first:
 Building from source needs Go 1.25+ and the Xcode Command Line Tools
 (`xcode-select --install`), then `make install install-bar`.
 
+## License
+
+ISC. The helmet icon comes from [lucide-lab](https://github.com/lucide-icons/lucide-lab),
+also ISC.
+
 ## Configuration
 
 Project roots are resolved in this order (the first that matches wins):
