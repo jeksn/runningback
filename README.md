@@ -5,6 +5,15 @@ each project. One Go binary does the detection, an interactive TUI shows
 it in your terminal, and a small SwiftUI menu bar app (Mole-style) keeps
 a live count in the macOS menu bar.
 
+```
+                           _             __               __
+   _______  ______  ____  (_)___  ____ _/ /_  ____ ______/ /__
+  / ___/ / / / __ \/ __ \/ / __ \/ __ `/ __ \/ __ `/ ___/ //_/
+ / /  / /_/ / / / / / / / / / / / /_/ / /_/ / /_/ / /__/ ,<
+/_/   \__,_/_/ /_/_/ /_/_/_/ /_/\__, /_.___/\__,_/\___/_/|_|
+                               /____/
+```
+
     runningback              interactive TUI
     runningback list         one-shot list
     runningback list --json  machine-readable output (used by the menu bar app)
